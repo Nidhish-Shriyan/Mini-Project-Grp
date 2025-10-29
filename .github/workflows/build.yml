@@ -17,3 +17,29 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+# Set up JDK (change java-version to the version your project requires)
+- name: Set up JDK
+  uses: actions/setup-java@v4
+  with:
+      distribution: temurin
+      java-version: '17'
+
+  # Cache Maven dependencies for faster builds
+- name: Cache Maven local repository
+   uses: actions/cache@v4
+   with:
+     path: ~/.m2/repository
+     key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+     restore-keys: |
+        maven-${{ runner.os }}-
+
+  # Build the project so .class files exist for Sonar's Java sensor
+- name: Build (Maven)
+   run: mvn -B -DskipTests package
+
+  # Run SonarQube scan (re-uses your Sonar action, but now run AFTER build)
+- name: SonarQube Scan
+   uses: SonarSource/sonarqube-scan-action@v6
+   env:
+     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
